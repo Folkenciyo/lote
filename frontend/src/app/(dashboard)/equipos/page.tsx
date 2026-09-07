@@ -13,16 +13,23 @@ export default function EquiposPage() {
   const { equipos, cargando } = useEquipos(lote);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <LoteFilterBar loteSeleccionado={lote} onCambiarLote={setLote} />
+    <div className="flex flex-col gap-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">Equipos</h1>
+          <p className="text-sm text-muted">{equipos.length} equipos</p>
+        </div>
         <RoleGate rol="supervisor">
-          <Link href="/equipos/nuevo" className="rounded bg-black px-3 py-1 text-sm text-white">
+          <Link
+            href="/equipos/nuevo"
+            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+          >
             Nuevo equipo
           </Link>
         </RoleGate>
       </div>
-      {cargando ? <p>Cargando equipos…</p> : <EquipoTable equipos={equipos} />}
+      <LoteFilterBar loteSeleccionado={lote} onCambiarLote={setLote} />
+      {cargando ? <p className="text-muted">Cargando equipos…</p> : <EquipoTable equipos={equipos} />}
     </div>
   );
 }

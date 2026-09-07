@@ -18,11 +18,13 @@ export function TareaChecklistItem({
   const [observaciones, setObservaciones] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [guardado, setGuardado] = useState(false);
 
   const marcarRealizado = async (event: FormEvent) => {
     event.preventDefault();
     setEnviando(true);
     setError(null);
+    setGuardado(false);
     try {
       await apiClient.post("/registros", {
         equipo_id: equipoId,
@@ -32,6 +34,8 @@ export function TareaChecklistItem({
       });
       setObservaciones("");
       onRegistrado();
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 3000);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al registrar la tarea");
     } finally {
@@ -42,15 +46,13 @@ export function TareaChecklistItem({
   return (
     <form
       onSubmit={marcarRealizado}
-      className="flex items-center justify-between gap-4 border-b border-black/5 py-3"
+      className="flex flex-wrap items-center justify-between gap-4 border-b border-card-border/60 px-5 py-4 last:border-b-0"
     >
-      <div>
+      <div className="flex flex-col gap-1.5">
         <p className="font-medium">{estadoTarea.tipo_tarea_nombre}</p>
         <EstadoBadge estado={estadoTarea.estado} />
         {estadoTarea.fecha_ultimo_registro && (
-          <p className="text-xs text-black/50">
-            Último: {estadoTarea.fecha_ultimo_registro}
-          </p>
+          <p className="text-xs text-muted">Último: {estadoTarea.fecha_ultimo_registro}</p>
         )}
       </div>
       <div className="flex items-center gap-2">
@@ -59,18 +61,19 @@ export function TareaChecklistItem({
           placeholder="Observaciones"
           value={observaciones}
           onChange={(event) => setObservaciones(event.target.value)}
-          className="rounded border border-black/10 px-2 py-1 text-sm"
+          className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
         />
         <button
           type="submit"
           disabled={enviando}
-          className="rounded bg-black px-3 py-1 text-sm text-white"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           Marcar realizado
         </button>
+        {guardado && <span className="text-sm text-green-700">✓ Guardado</span>}
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="w-full text-sm text-red-600">
           {error}
         </p>
       )}

@@ -30,38 +30,43 @@ export default function NuevoEquipoPage() {
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-sm flex-col gap-3">
-      <h1 className="text-lg font-semibold">Nuevo equipo</h1>
-      <input
-        type="text"
-        placeholder="Código"
-        value={codigo}
-        onChange={(event) => setCodigo(event.target.value)}
-        required
-        className="rounded border border-black/10 px-3 py-2"
-      />
-      <input
-        type="number"
-        placeholder="Lote"
-        value={lote}
-        onChange={(event) => setLote(event.target.value)}
-        required
-        min={1}
-        max={21}
-        className="rounded border border-black/10 px-3 py-2"
-      />
-      {error && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
-      <button
-        type="submit"
-        disabled={enviando}
-        className="rounded bg-black px-3 py-2 text-white"
+    <div className="flex flex-col gap-6">
+      <h1 className="text-xl font-semibold">Nuevo equipo</h1>
+      <form
+        onSubmit={onSubmit}
+        className="flex max-w-sm flex-col gap-3 rounded-xl border border-card-border bg-card p-6 shadow-sm"
       >
-        Crear
-      </button>
-    </form>
+        <input
+          type="text"
+          placeholder="Código"
+          value={codigo}
+          onChange={(event) => setCodigo(event.target.value)}
+          required
+          className="rounded-lg border border-card-border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+        <input
+          type="number"
+          placeholder="Lote"
+          value={lote}
+          onChange={(event) => setLote(event.target.value)}
+          required
+          min={1}
+          max={21}
+          className="rounded-lg border border-card-border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={enviando}
+          className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+        >
+          Crear
+        </button>
+      </form>
+    </div>
   );
 }

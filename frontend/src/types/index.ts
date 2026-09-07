@@ -51,3 +51,21 @@ export interface RegistroCreate {
   fecha_realizada: string;
   observaciones?: string | null;
 }
+
+export interface Registro {
+  id: number;
+  equipo_id: number;
+  tipo_tarea_id: number;
+  tipo_tarea_nombre: string;
+  usuario_id: number;
+  usuario_nombre: string;
+  fecha_realizada: string;
+  observaciones: string | null;
+}
+
+export interface ActividadUsuario {
+  usuario_id: number;
+  nombre: string;
+  total_registros: number;
+  ultimo_registro: string | null;
+}

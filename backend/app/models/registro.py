@@ -40,7 +40,9 @@ class RegistroOut(BaseModel):
     id: int
     equipo_id: int
     tipo_tarea_id: int
+    tipo_tarea_nombre: str
     usuario_id: int
+    usuario_nombre: str
     fecha_realizada: date
     observaciones: str | None
 
