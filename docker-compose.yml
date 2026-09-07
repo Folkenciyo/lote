@@ -27,6 +27,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - /app/.venv
     depends_on:
       db:
         condition: service_healthy
@@ -34,9 +35,10 @@ services:
   frontend:
     build:
       context: ./frontend
-    command: npm run dev
+    command: npx next dev --webpack --hostname 0.0.0.0
     environment:
       BACKEND_URL: http://backend:8000
+      WATCH_POLLING: "true"
     ports:
       - "3001:3000"
     volumes:

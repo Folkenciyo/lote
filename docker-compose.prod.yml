@@ -1,0 +1,57 @@
+# Stack de producción para Dokploy.
+#
+# Diferencias con el compose de desarrollo: sin puertos publicados (Traefik llega
+# por la red de Docker), los secretos vienen del entorno sin valores por defecto,
+# y solo el frontend necesita dominio (proxya /api al backend por la red interna,
+# así toda la app vive en un único origen).
+#
+# Los nombres de servicio llevan prefijo porque Dokploy conecta todos los stacks
+# a la red compartida `dokploy-network`: un nombre genérico como `backend`
+# resolvería al contenedor de otro proyecto que ya registrase ese alias.
+
+services:
+  lote-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lote}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-lote}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lote} -d ${POSTGRES_DB:-lote}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  lote-backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-lote}:${POSTGRES_PASSWORD}@lote-db:5432/${POSTGRES_DB:-lote}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-600}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["https://lote.fholk.com"]}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+    depends_on:
+      lote-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  lote-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    environment:
+      # Leído en cada petición por el proxy de route handlers, nunca en build time.
+      BACKEND_URL: http://lote-backend:8000
+    expose:
+      - "3000"
+    depends_on:
+      - lote-backend
+    restart: unless-stopped
+
+volumes:
+  db_data:
