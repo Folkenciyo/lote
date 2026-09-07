@@ -9,6 +9,13 @@ from app.core.database import Base
 ROLES = ("tecnico", "supervisor")
 
 
+def normalizar_email(email: str) -> str:
+    """El email se guarda y se compara siempre en minúsculas: un móvil que
+    autocapitaliza la primera letra, o un email tecleado con mayúsculas
+    distintas a como se creó, no debe romper el login."""
+    return email.strip().lower()
+
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 

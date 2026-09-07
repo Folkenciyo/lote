@@ -17,7 +17,7 @@ export default function LoginPage() {
     setEnviando(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(email.trim(), password.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {
@@ -44,6 +44,9 @@ export default function LoginPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             className="rounded-lg border border-card-border px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           <input

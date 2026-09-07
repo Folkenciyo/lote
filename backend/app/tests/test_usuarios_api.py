@@ -46,6 +46,24 @@ def test_tecnico_no_puede_autopromoverse(client, db_session):
     assert tecnico.rol == "tecnico"
 
 
+def test_crear_usuario_normaliza_el_email_a_minusculas(client, db_session):
+    supervisor = _crear_usuario(db_session, "sup@x.com", "supervisor")
+
+    response = client.post(
+        "/api/usuarios",
+        json={
+            "email": "Nuevo.Tecnico@X.com",
+            "password": "clave123",
+            "nombre": "Nuevo",
+            "rol": "tecnico",
+        },
+        headers=_auth_headers(supervisor),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["email"] == "nuevo.tecnico@x.com"
+
+
 def test_supervisor_puede_crear_y_promover_usuarios(client, db_session):
     supervisor = _crear_usuario(db_session, "sup@x.com", "supervisor")
 

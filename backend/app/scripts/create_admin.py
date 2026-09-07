@@ -9,12 +9,13 @@ import sys
 
 from app.core.database import SessionLocal
 from app.core.security import hash_password
-from app.models.usuario import Usuario
+from app.models.usuario import Usuario, normalizar_email
 
 
 def create_admin(
     db, email: str, password: str, nombre: str = "Administrador"
 ) -> Usuario:
+    email = normalizar_email(email)
     existente = db.query(Usuario).filter(Usuario.email == email).first()
     if existente is not None:
         return existente

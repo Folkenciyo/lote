@@ -97,3 +97,21 @@ def test_login_credenciales_validas_devuelve_token(client, db_session):
     )
     assert response.status_code == 200
     assert response.json()["token_type"] == "bearer"
+
+
+def test_login_ignora_mayusculas_y_espacios_en_el_email(client, db_session):
+    db_session.add(
+        Usuario(
+            email="user@x.com",
+            password_hash=hash_password("correcta"),
+            nombre="User",
+            rol="tecnico",
+        )
+    )
+    db_session.commit()
+
+    response = client.post(
+        "/api/auth/login",
+        data={"username": " User@X.com ", "password": "correcta"},
+    )
+    assert response.status_code == 200

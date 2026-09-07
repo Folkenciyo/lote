@@ -4,7 +4,14 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import require_supervisor
 from app.core.security import hash_password
-from app.models.usuario import ROLES, Usuario, UsuarioCreate, UsuarioOut, UsuarioUpdate
+from app.models.usuario import (
+    ROLES,
+    Usuario,
+    UsuarioCreate,
+    UsuarioOut,
+    UsuarioUpdate,
+    normalizar_email,
+)
 
 router = APIRouter(
     prefix="/api/usuarios",
@@ -25,14 +32,15 @@ def crear_usuario(payload: UsuarioCreate, db: Session = Depends(get_db)) -> Usua
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Rol inválido, debe ser uno de: {ROLES}",
         )
-    if db.query(Usuario).filter(Usuario.email == payload.email).first():
+    email = normalizar_email(payload.email)
+    if db.query(Usuario).filter(Usuario.email == email).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Ya existe un usuario con email {payload.email}",
+            detail=f"Ya existe un usuario con email {email}",
         )
 
     usuario = Usuario(
-        email=payload.email,
+        email=email,
         password_hash=hash_password(payload.password),
         nombre=payload.nombre,
         rol=payload.rol,
