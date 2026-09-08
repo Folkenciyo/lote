@@ -5,17 +5,22 @@ from app.models.registro import Registro
 from app.models.tipo_tarea import TipoTarea
 from app.models.usuario import Usuario
 from app.services.estado_service import EstadoTarea
-from app.services.pdf_service import cargar_historial_con_usuario, generar_pdf_equipo
+from app.services.pdf_service import (
+    cargar_historial_con_usuario,
+    generar_pdf_equipo,
+    generar_pdf_historial,
+)
 
 
 def test_generar_pdf_equipo_devuelve_bytes_pdf_validos():
-    equipo = Equipo(id=1, codigo="1002", lote=1)
+    equipo = Equipo(id=1, codigo="1002")
     estados = [
         EstadoTarea(
             tipo_tarea_id=1,
             tipo_tarea_nombre="ACEITE",
             periodicidad_dias=30,
             fecha_ultimo_registro=date(2026, 1, 1),
+            usuario_ultimo_registro="Ana",
             estado="al_dia",
         )
     ]
@@ -27,7 +32,7 @@ def test_generar_pdf_equipo_devuelve_bytes_pdf_validos():
 
 
 def test_cargar_historial_con_usuario_incluye_nombre_usuario_y_tarea(db_session):
-    equipo = Equipo(codigo="1002", lote=1)
+    equipo = Equipo(codigo="1002")
     tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
     usuario = Usuario(email="a@a.com", password_hash="x", nombre="Ana", rol="tecnico")
     db_session.add_all([equipo, tarea, usuario])
@@ -54,7 +59,7 @@ def test_cargar_historial_con_usuario_incluye_nombre_usuario_y_tarea(db_session)
 
 
 def test_generar_pdf_equipo_con_historial_no_lanza_error():
-    equipo = Equipo(id=1, codigo="1002", lote=1)
+    equipo = Equipo(id=1, codigo="1002")
     registro = Registro(
         id=1,
         equipo_id=1,
@@ -65,5 +70,25 @@ def test_generar_pdf_equipo_con_historial_no_lanza_error():
     )
 
     contenido = generar_pdf_equipo(equipo, [], historial=[(registro, "Ana", "ACEITE")])
+
+    assert contenido.startswith(b"%PDF")
+
+
+def test_generar_pdf_historial_sin_registros_no_lanza_error():
+    contenido = generar_pdf_historial([])
+    assert contenido.startswith(b"%PDF")
+
+
+def test_generar_pdf_historial_con_registros_de_varios_equipos():
+    registro = Registro(
+        id=1,
+        equipo_id=1,
+        tipo_tarea_id=1,
+        usuario_id=1,
+        fecha_realizada=date(2026, 1, 1),
+        observaciones=None,
+    )
+
+    contenido = generar_pdf_historial([(registro, "Ana", "ACEITE", "1002")])
 
     assert contenido.startswith(b"%PDF")

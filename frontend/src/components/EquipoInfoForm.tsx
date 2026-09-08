@@ -18,7 +18,7 @@ export function EquipoInfoForm({
   const [marca, setMarca] = useState(equipo.marca ?? "");
   const [modelo, setModelo] = useState(equipo.modelo ?? "");
   const [tipo, setTipo] = useState(equipo.tipo ?? "");
-  const [lote, setLote] = useState(String(equipo.lote));
+  const [observaciones, setObservaciones] = useState(equipo.observaciones ?? "");
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -33,7 +33,7 @@ export function EquipoInfoForm({
         marca: marca || null,
         modelo: modelo || null,
         tipo: tipo || null,
-        lote: Number(lote),
+        observaciones: observaciones || null,
       });
       onActualizado(actualizado);
       setGuardado(true);
@@ -75,57 +75,65 @@ export function EquipoInfoForm({
           {equipo.activo ? "Activo" : "Archivado"}
         </span>
       </div>
+      {equipo.creado_por_nombre && (
+        <p className="border-b border-card-border px-5 py-2 text-xs text-muted">
+          Alta registrada por {equipo.creado_por_nombre}
+        </p>
+      )}
       <RoleGate rol="supervisor">
-        <form onSubmit={guardarCambios} className="flex flex-wrap items-end gap-2 p-5">
-          <input
-            type="text"
-            placeholder="Marca"
-            value={marca}
-            onChange={(event) => setMarca(event.target.value)}
-            className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+        <form onSubmit={guardarCambios} className="flex flex-col gap-3 p-5">
+          <div className="flex flex-wrap items-end gap-2">
+            <input
+              type="text"
+              placeholder="Marca"
+              value={marca}
+              onChange={(event) => setMarca(event.target.value)}
+              className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+            />
+            <input
+              type="text"
+              placeholder="Modelo"
+              value={modelo}
+              onChange={(event) => setModelo(event.target.value)}
+              className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+            />
+            <input
+              type="text"
+              placeholder="Tipo"
+              value={tipo}
+              onChange={(event) => setTipo(event.target.value)}
+              className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <textarea
+            placeholder="Observaciones generales del vehículo"
+            value={observaciones}
+            onChange={(event) => setObservaciones(event.target.value)}
+            rows={2}
+            className="w-full rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
           />
-          <input
-            type="text"
-            placeholder="Modelo"
-            value={modelo}
-            onChange={(event) => setModelo(event.target.value)}
-            className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-          />
-          <input
-            type="text"
-            placeholder="Tipo"
-            value={tipo}
-            onChange={(event) => setTipo(event.target.value)}
-            className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-          />
-          <input
-            type="number"
-            min={1}
-            max={21}
-            value={lote}
-            onChange={(event) => setLote(event.target.value)}
-            className="w-20 rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-          />
-          <button
-            type="submit"
-            disabled={enviando}
-            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-          >
-            Guardar cambios
-          </button>
-          <button
-            type="button"
-            onClick={alternarArchivado}
-            className="rounded-lg border border-card-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-background"
-          >
-            {equipo.activo ? "Archivar equipo" : "Reactivar equipo"}
-          </button>
-          {guardado && <span className="text-sm text-green-700">✓ Guardado</span>}
-          {error && (
-            <p role="alert" className="w-full text-sm text-red-600">
-              {error}
-            </p>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              disabled={enviando}
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+            >
+              Guardar cambios
+            </button>
+            <button
+              type="button"
+              onClick={alternarArchivado}
+              className="rounded-lg border border-card-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-background"
+            >
+              {equipo.activo ? "Archivar equipo" : "Reactivar equipo"}
+            </button>
+            {guardado && <span className="text-sm text-green-700">✓ Guardado</span>}
+            {error && (
+              <p role="alert" className="w-full text-sm text-red-600">
+                {error}
+              </p>
+            )}
+          </div>
         </form>
       </RoleGate>
     </div>

@@ -11,7 +11,7 @@ def construir_filas_export(
 ) -> list[dict]:
     filas = []
     for equipo in equipos:
-        fila: dict = {"codigo": equipo.codigo, "lote": equipo.lote}
+        fila: dict = {"codigo": equipo.codigo}
         for estado_tarea in estados_por_equipo.get(equipo.id, []):
             fila[f"{estado_tarea.tipo_tarea_nombre}_estado"] = estado_tarea.estado
             fila[f"{estado_tarea.tipo_tarea_nombre}_fecha"] = (

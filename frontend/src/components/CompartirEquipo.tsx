@@ -4,7 +4,7 @@ import { IconDownload, IconMail, IconWhatsapp } from "@/components/icons";
 import { Equipo } from "@/types";
 
 function construirResumenTexto(equipo: Equipo, url: string): string {
-  return `Equipo ${equipo.codigo} (Lote ${equipo.lote}) - Mantenimiento de Flota\nVer detalle y descargar PDF: ${url}`;
+  return `Equipo ${equipo.codigo} - Mantenimiento de Flota\nVer detalle y descargar PDF: ${url}`;
 }
 
 export function CompartirEquipo({ equipo }: { equipo: Equipo }) {

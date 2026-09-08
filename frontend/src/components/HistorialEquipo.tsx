@@ -41,6 +41,8 @@ export function HistorialEquipo({ equipoId, refreshKey }: { equipoId: number; re
                 <th className="px-5 py-2 font-medium">Fecha</th>
                 <th className="px-5 py-2 font-medium">Tarea</th>
                 <th className="px-5 py-2 font-medium">Registrado por</th>
+                <th className="px-5 py-2 font-medium">Horas</th>
+                <th className="px-5 py-2 font-medium">Km</th>
                 <th className="px-5 py-2 font-medium">Observaciones</th>
               </tr>
             </thead>
@@ -50,6 +52,8 @@ export function HistorialEquipo({ equipoId, refreshKey }: { equipoId: number; re
                   <td className="px-5 py-2.5">{registro.fecha_realizada}</td>
                   <td className="px-5 py-2.5">{registro.tipo_tarea_nombre}</td>
                   <td className="px-5 py-2.5 font-medium">{registro.usuario_nombre}</td>
+                  <td className="px-5 py-2.5 text-muted">{registro.horas_trabajo ?? "-"}</td>
+                  <td className="px-5 py-2.5 text-muted">{registro.kilometros ?? "-"}</td>
                   <td className="px-5 py-2.5 text-muted">{registro.observaciones ?? "-"}</td>
                 </tr>
               ))}

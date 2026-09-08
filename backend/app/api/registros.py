@@ -14,17 +14,23 @@ router = APIRouter(prefix="/api/registros", tags=["registros"])
 
 
 def _a_registro_out(
-    registro: Registro, usuario_nombre: str, tipo_tarea_nombre: str
+    registro: Registro,
+    usuario_nombre: str,
+    tipo_tarea_nombre: str,
+    equipo_codigo: str,
 ) -> RegistroOut:
     return RegistroOut(
         id=registro.id,
         equipo_id=registro.equipo_id,
+        equipo_codigo=equipo_codigo,
         tipo_tarea_id=registro.tipo_tarea_id,
         tipo_tarea_nombre=tipo_tarea_nombre,
         usuario_id=registro.usuario_id,
         usuario_nombre=usuario_nombre,
         fecha_realizada=registro.fecha_realizada,
         observaciones=registro.observaciones,
+        horas_trabajo=registro.horas_trabajo,
+        kilometros=registro.kilometros,
     )
 
 
@@ -34,7 +40,8 @@ def crear_registro(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ) -> RegistroOut:
-    if db.get(Equipo, payload.equipo_id) is None:
+    equipo = db.get(Equipo, payload.equipo_id)
+    if equipo is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Equipo no encontrado"
         )
@@ -49,12 +56,14 @@ def crear_registro(
         tipo_tarea_id=payload.tipo_tarea_id,
         fecha_realizada=payload.fecha_realizada,
         observaciones=payload.observaciones,
+        horas_trabajo=payload.horas_trabajo,
+        kilometros=payload.kilometros,
         usuario_id=usuario.id,
     )
     db.add(registro)
     db.commit()
     db.refresh(registro)
-    return _a_registro_out(registro, usuario.nombre, tipo_tarea.nombre)
+    return _a_registro_out(registro, usuario.nombre, tipo_tarea.nombre, equipo.codigo)
 
 
 @router.get("", response_model=list[RegistroOut])
@@ -67,9 +76,10 @@ def listar_registros(
     usuario: Usuario = Depends(get_current_user),
 ) -> list[RegistroOut]:
     query = (
-        db.query(Registro, Usuario.nombre, TipoTarea.nombre)
+        db.query(Registro, Usuario.nombre, TipoTarea.nombre, Equipo.codigo)
         .join(Usuario, Registro.usuario_id == Usuario.id)
         .join(TipoTarea, Registro.tipo_tarea_id == TipoTarea.id)
+        .join(Equipo, Registro.equipo_id == Equipo.id)
     )
     if equipo_id is not None:
         query = query.filter(Registro.equipo_id == equipo_id)
@@ -82,8 +92,8 @@ def listar_registros(
 
     filas = query.order_by(Registro.fecha_realizada.desc(), Registro.id.desc()).all()
     return [
-        _a_registro_out(registro, nombre_usuario, nombre_tarea)
-        for registro, nombre_usuario, nombre_tarea in filas
+        _a_registro_out(registro, nombre_usuario, nombre_tarea, codigo_equipo)
+        for registro, nombre_usuario, nombre_tarea, codigo_equipo in filas
     ]
 
 

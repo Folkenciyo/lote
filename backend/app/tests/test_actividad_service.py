@@ -8,7 +8,7 @@ from app.services.actividad_service import actividad_por_usuario
 
 
 def _seed(db_session):
-    equipo = Equipo(codigo="1002", lote=1)
+    equipo = Equipo(codigo="1002")
     tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
     tecnico1 = Usuario(email="t1@x.com", password_hash="x", nombre="Ana", rol="tecnico")
     tecnico2 = Usuario(

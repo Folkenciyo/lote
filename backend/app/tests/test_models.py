@@ -26,10 +26,10 @@ def test_seed_catalogo_inserta_8_tareas_con_categoria_correcta(db_session):
 
 
 def test_codigo_equipo_duplicado_lanza_integrity_error(db_session):
-    db_session.add(Equipo(codigo="1002", lote=1))
+    db_session.add(Equipo(codigo="1002"))
     db_session.commit()
 
-    db_session.add(Equipo(codigo="1002", lote=1))
+    db_session.add(Equipo(codigo="1002"))
     with pytest.raises(IntegrityError):
         db_session.commit()
 

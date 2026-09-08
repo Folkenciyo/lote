@@ -24,6 +24,11 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
     cache: "no-store",
   });
 
+  const nullBodyStatuses = [101, 103, 204, 205, 304];
+  if (nullBodyStatuses.includes(backendResponse.status)) {
+    return new NextResponse(null, { status: backendResponse.status });
+  }
+
   const responseBody = await backendResponse.arrayBuffer();
   return new NextResponse(responseBody, {
     status: backendResponse.status,

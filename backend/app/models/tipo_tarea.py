@@ -25,10 +25,21 @@ class TipoTarea(Base):
     nombre: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     categoria: Mapped[str] = mapped_column(String(20))
     periodicidad_dias: Mapped[int] = mapped_column(Integer, default=30)
+    limite_horas: Mapped[int | None] = mapped_column(Integer, default=None)
+
+
+class TipoTareaCreate(BaseModel):
+    nombre: str
+    categoria: str
+    periodicidad_dias: int
+    limite_horas: int | None = None
 
 
 class TipoTareaUpdate(BaseModel):
-    periodicidad_dias: int
+    nombre: str | None = None
+    categoria: str | None = None
+    periodicidad_dias: int | None = None
+    limite_horas: int | None = None
 
 
 class TipoTareaOut(BaseModel):
@@ -36,5 +47,6 @@ class TipoTareaOut(BaseModel):
     nombre: str
     categoria: str
     periodicidad_dias: int
+    limite_horas: int | None
 
     model_config = {"from_attributes": True}

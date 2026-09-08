@@ -1,7 +1,7 @@
 from datetime import UTC, date, datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Date, DateTime, ForeignKey, Index, String
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -24,6 +24,8 @@ class Registro(Base):
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
     fecha_realizada: Mapped[date] = mapped_column(Date)
     observaciones: Mapped[str | None] = mapped_column(String(500), default=None)
+    horas_trabajo: Mapped[int | None] = mapped_column(Integer, default=None)
+    kilometros: Mapped[int | None] = mapped_column(Integer, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
@@ -34,16 +36,21 @@ class RegistroCreate(BaseModel):
     tipo_tarea_id: int
     fecha_realizada: date
     observaciones: str | None = None
+    horas_trabajo: int | None = None
+    kilometros: int | None = None
 
 
 class RegistroOut(BaseModel):
     id: int
     equipo_id: int
+    equipo_codigo: str
     tipo_tarea_id: int
     tipo_tarea_nombre: str
     usuario_id: int
     usuario_nombre: str
     fecha_realizada: date
     observaciones: str | None
+    horas_trabajo: int | None
+    kilometros: int | None
 
     model_config = {"from_attributes": True}

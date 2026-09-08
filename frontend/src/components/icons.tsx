@@ -24,6 +24,15 @@ export function IconTruck({ className = base }: IconProps) {
   );
 }
 
+export function IconSettings({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v2.2M12 18.8V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.2M18.8 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6" />
+    </svg>
+  );
+}
+
 export function IconUsers({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
@@ -97,6 +106,15 @@ export function IconClock({ className = base }: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
       <circle cx="12" cy="12" r="9.5" />
       <path d="M12 7v5l3.2 2" />
+    </svg>
+  );
+}
+
+export function IconChecklist({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
+      <path d="M9 5h11M9 12h11M9 19h11" />
+      <path d="M3.5 5l1 1 1.8-2M3.5 12l1 1 1.8-2M3.5 19l1 1 1.8-2" />
     </svg>
   );
 }

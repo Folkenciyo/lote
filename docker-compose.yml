@@ -23,6 +23,8 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/flota
       SECRET_KEY: dev-secret-key-please-change-in-production-32b
       CORS_ORIGINS: '["http://localhost:3000"]'
+      ADMIN_EMAIL: admin@admin.com
+      ADMIN_PASSWORD: admin
     ports:
       - "8000:8000"
     volumes:

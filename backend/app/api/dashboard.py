@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import require_autenticado
 from app.services.actividad_service import actividad_por_usuario
-from app.services.dashboard_service import resumen_dashboard
+from app.services.dashboard_service import avisos_categoria, resumen_dashboard
 
 router = APIRouter(
     prefix="/api/dashboard",
@@ -16,31 +16,44 @@ router = APIRouter(
 )
 
 
-class ResumenLoteOut(BaseModel):
-    lote: int
-    total_equipos: int
-    total_pares: int
-    vencidos: int
-    proximos_a_vencer: int
-    sin_registro: int
-    porcentaje_cumplimiento: float
-
-
 class DashboardResumenOut(BaseModel):
     total_equipos: int
+    total_pares: int
     total_vencidos: int
     total_proximos_a_vencer: int
-    por_lote: list[ResumenLoteOut]
+    total_sin_registro: int
+    porcentaje_cumplimiento: float
 
 
 @router.get("/resumen", response_model=DashboardResumenOut)
 def obtener_resumen(db: Session = Depends(get_db)) -> DashboardResumenOut:
     resumen = resumen_dashboard(db)
-    return DashboardResumenOut(
-        total_equipos=resumen.total_equipos,
-        total_vencidos=resumen.total_vencidos,
-        total_proximos_a_vencer=resumen.total_proximos_a_vencer,
-        por_lote=[ResumenLoteOut(**vars(r)) for r in resumen.por_lote],
+    return DashboardResumenOut(**vars(resumen))
+
+
+class AvisoCategoriaOut(BaseModel):
+    total_vencidos: int
+    codigos_equipos: list[str]
+
+
+class AvisosOut(BaseModel):
+    mantenimiento: AvisoCategoriaOut
+    engrase: AvisoCategoriaOut
+
+
+@router.get("/avisos-mantenimiento", response_model=AvisosOut)
+def obtener_avisos_mantenimiento(db: Session = Depends(get_db)) -> AvisosOut:
+    mantenimiento = avisos_categoria(db, "mantenimiento")
+    engrase = avisos_categoria(db, "engrase")
+    return AvisosOut(
+        mantenimiento=AvisoCategoriaOut(
+            total_vencidos=mantenimiento.total_vencidos,
+            codigos_equipos=mantenimiento.codigos_equipos,
+        ),
+        engrase=AvisoCategoriaOut(
+            total_vencidos=engrase.total_vencidos,
+            codigos_equipos=engrase.codigos_equipos,
+        ),
     )
 
 

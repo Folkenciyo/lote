@@ -20,7 +20,7 @@ export default function DashboardPage() {
         <p className="text-sm text-muted">Estado general de la flota</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           titulo="Equipos activos"
           valor={resumen.total_equipos}
@@ -38,44 +38,7 @@ export default function DashboardPage() {
           icono={<IconClock className="h-5 w-5" />}
           tono="ambar"
         />
-      </div>
-
-      <div className="rounded-xl border border-card-border bg-card shadow-sm">
-        <div className="border-b border-card-border px-5 py-4">
-          <h2 className="font-medium">Cumplimiento por lote</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-muted">
-                <th className="px-5 py-2 font-medium">Lote</th>
-                <th className="px-5 py-2 font-medium">Equipos</th>
-                <th className="px-5 py-2 font-medium">Vencidos</th>
-                <th className="px-5 py-2 font-medium">Próximos</th>
-                <th className="px-5 py-2 font-medium">% Cumplimiento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resumen.por_lote.map((lote) => (
-                <tr key={lote.lote} className="border-t border-card-border/60">
-                  <td className="px-5 py-2.5 font-medium">{lote.lote}</td>
-                  <td className="px-5 py-2.5">{lote.total_equipos}</td>
-                  <td className="px-5 py-2.5">
-                    <span className={lote.vencidos > 0 ? "text-red-600" : ""}>
-                      {lote.vencidos}
-                    </span>
-                  </td>
-                  <td className="px-5 py-2.5">
-                    <span className={lote.proximos_a_vencer > 0 ? "text-amber-600" : ""}>
-                      {lote.proximos_a_vencer}
-                    </span>
-                  </td>
-                  <td className="px-5 py-2.5">{lote.porcentaje_cumplimiento}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <MetricCard titulo="% Cumplimiento" valor={`${resumen.porcentaje_cumplimiento}%`} />
       </div>
 
       <div className="rounded-xl border border-card-border bg-card shadow-sm">

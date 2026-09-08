@@ -8,7 +8,7 @@ from app.services.estado_service import estado_mes
 
 
 def test_estado_mes_marca_cumplido_solo_si_hay_evento_en_ese_mes_calendario(db_session):
-    equipo = Equipo(codigo="1002", lote=1)
+    equipo = Equipo(codigo="1002")
     tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
     usuario = Usuario(email="u@u.com", password_hash="x", nombre="U", rol="tecnico")
     db_session.add_all([equipo, tarea, usuario])
@@ -32,7 +32,7 @@ def test_estado_mes_marca_cumplido_solo_si_hay_evento_en_ese_mes_calendario(db_s
 
 
 def test_estado_mes_ignora_registros_de_otros_meses_aunque_esten_al_dia(db_session):
-    equipo = Equipo(codigo="1002", lote=1)
+    equipo = Equipo(codigo="1002")
     tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=90)
     usuario = Usuario(email="u@u.com", password_hash="x", nombre="U", rol="tecnico")
     db_session.add_all([equipo, tarea, usuario])

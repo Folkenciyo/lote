@@ -6,7 +6,7 @@ from app.services.export_service import construir_filas_export
 
 
 def test_construir_filas_export_transforma_estados_en_filas_planas():
-    equipo = Equipo(id=1, codigo="1002", lote=1)
+    equipo = Equipo(id=1, codigo="1002")
     estados_por_equipo = {
         1: [
             EstadoTarea(
@@ -14,6 +14,7 @@ def test_construir_filas_export_transforma_estados_en_filas_planas():
                 tipo_tarea_nombre="ACEITE",
                 periodicidad_dias=30,
                 fecha_ultimo_registro=date(2026, 1, 1),
+                usuario_ultimo_registro="Ana",
                 estado="al_dia",
             ),
             EstadoTarea(
@@ -21,6 +22,7 @@ def test_construir_filas_export_transforma_estados_en_filas_planas():
                 tipo_tarea_nombre="GRUPO",
                 periodicidad_dias=30,
                 fecha_ultimo_registro=None,
+                usuario_ultimo_registro=None,
                 estado="sin_registro",
             ),
         ]
@@ -31,7 +33,6 @@ def test_construir_filas_export_transforma_estados_en_filas_planas():
     assert filas == [
         {
             "codigo": "1002",
-            "lote": 1,
             "ACEITE_estado": "al_dia",
             "ACEITE_fecha": "2026-01-01",
             "GRUPO_estado": "sin_registro",
@@ -40,7 +41,7 @@ def test_construir_filas_export_transforma_estados_en_filas_planas():
     ]
 
 
-def test_construir_filas_export_equipo_sin_estados_da_solo_codigo_y_lote():
-    equipo = Equipo(id=1, codigo="1002", lote=1)
+def test_construir_filas_export_equipo_sin_estados_da_solo_codigo():
+    equipo = Equipo(id=1, codigo="1002")
     filas = construir_filas_export([equipo], {})
-    assert filas == [{"codigo": "1002", "lote": 1}]
+    assert filas == [{"codigo": "1002"}]

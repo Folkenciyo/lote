@@ -4,8 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 
-import { IconDashboard, IconLogout, IconReport, IconTruck, IconUsers } from "@/components/icons";
+import { AvisoMantenimientoBanner } from "@/components/AvisoMantenimientoBanner";
+import {
+  IconChecklist,
+  IconDashboard,
+  IconLogout,
+  IconReport,
+  IconSettings,
+  IconTruck,
+  IconUsers,
+} from "@/components/icons";
 import { RoleGate } from "@/components/RoleGate";
+import { PlanDiarioProvider, usePlanDiario } from "@/contexts/PlanDiarioContext";
 import { useAuth } from "@/hooks/useAuth";
 
 const NAV_ITEMS = [
@@ -19,11 +29,13 @@ function NavLink({
   label,
   icon: Icon,
   active,
+  badge,
 }: {
   href: string;
   label: string;
   icon: (props: { className?: string }) => React.JSX.Element;
   active: boolean;
+  badge?: number;
 }) {
   return (
     <Link
@@ -35,12 +47,31 @@ function NavLink({
       }`}
     >
       <Icon className="h-5 w-5 shrink-0" />
-      {label}
+      <span className="flex-1">{label}</span>
+      {!!badge && (
+        <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-white">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+function ListaDelDiaNavLink({ active }: { active: boolean }) {
+  const { items } = usePlanDiario();
+  const pendientes = items.filter((item) => !item.hecho).length;
+  return (
+    <NavLink
+      href="/lista-dia"
+      label="Lista del día"
+      icon={IconChecklist}
+      active={active}
+      badge={pendientes}
+    />
+  );
+}
+
+function DashboardShell({ children }: { children: ReactNode }) {
   const { usuario, cargando, logout } = useAuth();
   const pathname = usePathname();
 
@@ -66,12 +97,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.href} {...item} active={pathname === item.href} />
           ))}
+          <ListaDelDiaNavLink active={pathname === "/lista-dia"} />
           <RoleGate rol="supervisor">
             <NavLink
               href="/usuarios"
               label="Usuarios"
               icon={IconUsers}
               active={pathname === "/usuarios"}
+            />
+            <NavLink
+              href="/configuracion"
+              label="Configuración"
+              icon={IconSettings}
+              active={pathname === "/configuracion"}
             />
           </RoleGate>
         </nav>
@@ -92,7 +130,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-x-hidden p-8">{children}</main>
+      <div className="flex flex-1 flex-col overflow-x-hidden">
+        <AvisoMantenimientoBanner />
+        <main className="flex-1 p-8">{children}</main>
+      </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return (
+    <PlanDiarioProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </PlanDiarioProvider>
   );
 }
