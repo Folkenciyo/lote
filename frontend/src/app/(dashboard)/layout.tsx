@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 import { AvisoMantenimientoBanner } from "@/components/AvisoMantenimientoBanner";
 import {
   IconChecklist,
+  IconClose,
   IconDashboard,
   IconLogout,
+  IconMenu,
   IconReport,
   IconSettings,
   IconTruck,
@@ -74,6 +76,13 @@ function ListaDelDiaNavLink({ active }: { active: boolean }) {
 function DashboardShell({ children }: { children: ReactNode }) {
   const { usuario, cargando, logout } = useAuth();
   const pathname = usePathname();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [pathnameAnterior, setPathnameAnterior] = useState(pathname);
+
+  if (pathname !== pathnameAnterior) {
+    setPathnameAnterior(pathname);
+    setMenuAbierto(false);
+  }
 
   if (cargando) {
     return (
@@ -85,15 +94,35 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col bg-sidebar px-4 py-6">
-        <div className="mb-8 flex items-center gap-2 px-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
-            <IconTruck className="h-5 w-5" />
+      {menuAbierto && (
+        <div
+          onClick={() => setMenuAbierto(false)}
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col bg-sidebar px-4 py-6 transition-transform duration-200 lg:static lg:translate-x-0 ${
+          menuAbierto ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="mb-8 flex items-center justify-between gap-2 px-2">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
+              <IconTruck className="h-5 w-5" />
+            </div>
+            <span className="text-sm font-semibold text-white">Mantenimiento de Flota</span>
           </div>
-          <span className="text-sm font-semibold text-white">Mantenimiento de Flota</span>
+          <button
+            onClick={() => setMenuAbierto(false)}
+            aria-label="Cerrar menú"
+            className="text-sidebar-foreground hover:text-white lg:hidden"
+          >
+            <IconClose className="h-5 w-5" />
+          </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.href} {...item} active={pathname === item.href} />
           ))}
@@ -130,9 +159,19 @@ function DashboardShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      <div className="flex flex-1 flex-col overflow-x-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+        <header className="flex items-center gap-3 border-b border-card-border bg-card px-4 py-3 lg:hidden">
+          <button
+            onClick={() => setMenuAbierto(true)}
+            aria-label="Abrir menú"
+            className="rounded-lg p-1.5 text-foreground hover:bg-background"
+          >
+            <IconMenu className="h-5 w-5" />
+          </button>
+          <span className="text-sm font-semibold">Mantenimiento de Flota</span>
+        </header>
         <AvisoMantenimientoBanner />
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

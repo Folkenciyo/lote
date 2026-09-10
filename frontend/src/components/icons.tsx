@@ -119,6 +119,22 @@ export function IconChecklist({ className = base }: IconProps) {
   );
 }
 
+export function IconMenu({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
+      <path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17" />
+    </svg>
+  );
+}
+
+export function IconClose({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
+      <path d="M5 5l14 14M19 5L5 19" />
+    </svg>
+  );
+}
+
 export function IconEdit({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className}>
