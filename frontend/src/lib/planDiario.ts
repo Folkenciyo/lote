@@ -72,3 +72,14 @@ export function limpiarHechasPlanDia(): PlanDiarioItem[] {
   guardarPlanDia(items);
   return items;
 }
+
+export function quitarEquipoPlanDia(equipoId: number): PlanDiarioItem[] {
+  const items = leerPlanDia().filter((item) => item.equipoId !== equipoId);
+  guardarPlanDia(items);
+  return items;
+}
+
+export function vaciarPlanDia(): PlanDiarioItem[] {
+  guardarPlanDia([]);
+  return [];
+}

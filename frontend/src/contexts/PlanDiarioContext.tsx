@@ -9,7 +9,9 @@ import {
   leerPlanDia,
   limpiarHechasPlanDia,
   PlanDiarioItem,
+  quitarEquipoPlanDia,
   quitarItemPlanDia,
+  vaciarPlanDia,
 } from "@/lib/planDiario";
 
 const DURACION_AVISO_MS = 3000;
@@ -22,7 +24,9 @@ interface PlanDiarioContextValue {
   estaEnLista: (equipoId: number, tipoTareaId: number) => boolean;
   alternarHecho: (id: string) => void;
   quitarItem: (id: string) => void;
+  quitarEquipo: (equipoId: number) => void;
   limpiarHechas: () => void;
+  vaciar: () => void;
 }
 
 const PlanDiarioContext = createContext<PlanDiarioContextValue | null>(null);
@@ -71,7 +75,9 @@ export function PlanDiarioProvider({ children }: { children: ReactNode }) {
     estaEnLista: (equipoId, tipoTareaId) => ids.has(idItem(equipoId, tipoTareaId)),
     alternarHecho: (id) => setItems(alternarHechoPlanDia(id)),
     quitarItem: (id) => setItems(quitarItemPlanDia(id)),
+    quitarEquipo: (equipoId) => setItems(quitarEquipoPlanDia(equipoId)),
     limpiarHechas: () => setItems(limpiarHechasPlanDia()),
+    vaciar: () => setItems(vaciarPlanDia()),
   };
 
   return (
