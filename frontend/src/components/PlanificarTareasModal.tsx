@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 import { usePlanDiario } from "@/contexts/PlanDiarioContext";
 import { apiClient } from "@/lib/apiClient";
-import { Equipo, EstadoTarea } from "@/types";
+import { idItem } from "@/lib/planDiario";
+import { Equipo, EstadoTarea, ResumenEquipo } from "@/types";
 
 const ESTADOS_PRESELECCIONADOS = new Set(["vencido", "proximo_a_vencer"]);
 
@@ -23,7 +24,7 @@ export function PlanificarTareasModal({
   equipos: Equipo[];
   onClose: () => void;
 }) {
-  const { agregarItems } = usePlanDiario();
+  const { agregarItems, estaEnLista } = usePlanDiario();
   const [cargando, setCargando] = useState(true);
   const [tareas, setTareas] = useState<TareaSeleccionable[]>([]);
   const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
@@ -31,26 +32,25 @@ export function PlanificarTareasModal({
   useEffect(() => {
     let cancelado = false;
     async function cargar() {
-      const resultados = await Promise.all(
-        equipos.map(async (equipo) => {
-          const estados = await apiClient.get<EstadoTarea[]>(`/estado/equipo/${equipo.id}`);
-          return estados.map((estadoTarea) => ({
-            equipoId: equipo.id,
-            equipoCodigo: equipo.codigo,
-            tipoTareaId: estadoTarea.tipo_tarea_id,
-            tipoTareaNombre: estadoTarea.tipo_tarea_nombre,
-            estado: estadoTarea.estado,
-          }));
-        })
-      );
+      const ids = equipos.map((equipo) => equipo.id).join(",");
+      const resumenes = await apiClient.get<ResumenEquipo[]>(`/equipos/resumen?ids=${ids}`);
       if (cancelado) return;
-      const todas = resultados.flat();
+      const todas = resumenes.flatMap((resumen) =>
+        resumen.estados.map((estadoTarea) => ({
+          equipoId: resumen.equipo_id,
+          equipoCodigo: resumen.codigo,
+          tipoTareaId: estadoTarea.tipo_tarea_id,
+          tipoTareaNombre: estadoTarea.tipo_tarea_nombre,
+          estado: estadoTarea.estado,
+        }))
+      );
       setTareas(todas);
       setMarcadas(
         new Set(
           todas
             .filter((tarea) => ESTADOS_PRESELECCIONADOS.has(tarea.estado))
-            .map((tarea) => `${tarea.equipoId}:${tarea.tipoTareaId}`)
+            .filter((tarea) => !estaEnLista(tarea.equipoId, tarea.tipoTareaId))
+            .map((tarea) => idItem(tarea.equipoId, tarea.tipoTareaId))
         )
       );
       setCargando(false);
@@ -59,6 +59,9 @@ export function PlanificarTareasModal({
     return () => {
       cancelado = true;
     };
+    // estaEnLista cambia en cada render del provider; solo se usa para la
+    // preselección inicial al abrir el modal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equipos]);
 
   const alternar = (id: string) => {
@@ -110,16 +113,26 @@ export function PlanificarTareasModal({
                     <p className="mb-1.5 text-sm font-medium">Equipo {equipo.codigo}</p>
                     <div className="flex flex-col gap-1">
                       {tareasEquipo.map((tarea) => {
-                        const id = `${tarea.equipoId}:${tarea.tipoTareaId}`;
+                        const id = idItem(tarea.equipoId, tarea.tipoTareaId);
+                        const enLista = estaEnLista(tarea.equipoId, tarea.tipoTareaId);
                         return (
-                          <label key={id} className="flex items-center gap-2 text-sm">
+                          <label
+                            key={id}
+                            className={`flex items-center gap-2 text-sm ${enLista ? "text-green-700" : ""}`}
+                          >
                             <input
                               type="checkbox"
-                              checked={marcadas.has(id)}
+                              checked={enLista || marcadas.has(id)}
+                              disabled={enLista}
                               onChange={() => alternar(id)}
                               className="h-4 w-4 accent-primary"
                             />
                             {tarea.tipoTareaNombre}
+                            {enLista && (
+                              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium">
+                                ✓ Ya en la lista
+                              </span>
+                            )}
                           </label>
                         );
                       })}

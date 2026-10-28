@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 
 import { apiClient, ApiError } from "@/lib/apiClient";
+import { fechaLocalISO } from "@/lib/fechas";
 import { Equipo, EstadoOperativo } from "@/types";
 
 export function useRegistrarTarea(
@@ -28,7 +29,7 @@ export function useRegistrarTarea(
       await apiClient.post("/registros", {
         equipo_id: equipoId,
         tipo_tarea_id: tipoTareaId,
-        fecha_realizada: new Date().toISOString().slice(0, 10),
+        fecha_realizada: fechaLocalISO(),
         observaciones: observaciones || null,
         horas_trabajo: horasTrabajo ? Number(horasTrabajo) : null,
         kilometros: kilometros ? Number(kilometros) : null,

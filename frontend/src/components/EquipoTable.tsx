@@ -3,22 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { EstadoOperativoBadge } from "@/components/EstadoOperativoBadge";
+import { ObservacionAviso } from "@/components/ObservacionAviso";
 import { usePlanDiario } from "@/contexts/PlanDiarioContext";
 import { apiClient } from "@/lib/apiClient";
 import { ESTILOS_COLOR } from "@/lib/coloresEtiqueta";
-import { Equipo, EquipoEtiqueta, Estado, EstadoOperativo, EstadoTarea } from "@/types";
-
-const ETIQUETAS_ESTADO: Record<Exclude<EstadoOperativo, "activo">, string> = {
-  taller: "En taller",
-  averiado: "Averiado",
-  baja: "De baja",
-};
-
-const ESTILOS_ESTADO: Record<Exclude<EstadoOperativo, "activo">, string> = {
-  taller: "bg-amber-100 text-amber-700",
-  averiado: "bg-orange-100 text-orange-700",
-  baja: "bg-black/10 text-muted",
-};
+import { Equipo, Estado, EstadoTarea, Registro, ResumenEquipo } from "@/types";
 
 const PUNTO_ESTADO_TAREA: Record<Estado, string> = {
   al_dia: "bg-green-500",
@@ -34,32 +24,76 @@ function FilaActividad({
   equipo: Equipo;
   estadoTarea: EstadoTarea;
 }) {
-  const { agregarItems } = usePlanDiario();
+  const { agregarItems, estaEnLista } = usePlanDiario();
+  const enLista = estaEnLista(equipo.id, estadoTarea.tipo_tarea_id);
   return (
-    <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="flex items-center gap-1.5">
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PUNTO_ESTADO_TAREA[estadoTarea.estado]}`} />
-        <span className="font-medium">{estadoTarea.tipo_tarea_nombre}</span>
-        <span className="text-muted">{estadoTarea.fecha_ultimo_registro ?? "Sin registro"}</span>
-      </span>
-      <button
-        type="button"
-        title="Añadir a la lista del día"
-        onClick={() =>
-          agregarItems([
-            {
-              equipoId: equipo.id,
-              equipoCodigo: equipo.codigo,
-              tipoTareaId: estadoTarea.tipo_tarea_id,
-              tipoTareaNombre: estadoTarea.tipo_tarea_nombre,
-            },
-          ])
-        }
-        className="shrink-0 rounded-full border border-card-border px-1.5 text-primary hover:bg-primary/10"
-      >
-        +
-      </button>
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="flex items-center gap-1.5">
+          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PUNTO_ESTADO_TAREA[estadoTarea.estado]}`} />
+          <span className="font-medium">{estadoTarea.tipo_tarea_nombre}</span>
+          <span className="text-muted">{estadoTarea.fecha_ultimo_registro ?? "Sin registro"}</span>
+        </span>
+        <button
+          type="button"
+          title={enLista ? "Ya está en la lista del día" : "Añadir a la lista del día"}
+          aria-label={enLista ? "Ya está en la lista del día" : "Añadir a la lista del día"}
+          disabled={enLista}
+          onClick={() =>
+            agregarItems([
+              {
+                equipoId: equipo.id,
+                equipoCodigo: equipo.codigo,
+                tipoTareaId: estadoTarea.tipo_tarea_id,
+                tipoTareaNombre: estadoTarea.tipo_tarea_nombre,
+              },
+            ])
+          }
+          className={`shrink-0 rounded-full border px-1.5 ${
+            enLista
+              ? "border-green-300 bg-green-100 text-green-700"
+              : "border-card-border text-primary hover:bg-primary/10"
+          }`}
+        >
+          {enLista ? "✓" : "+"}
+        </button>
+      </div>
+      {estadoTarea.observaciones_ultimo_registro && (
+        <div className="pl-3">
+          <ObservacionAviso texto={estadoTarea.observaciones_ultimo_registro} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function UltimasObservaciones({
+  equipoId,
+  observaciones,
+}: {
+  equipoId: number;
+  observaciones: Registro[];
+}) {
+  if (observaciones.length === 0) return null;
+  return (
+    <details className="mt-1 text-xs">
+      <summary className="cursor-pointer font-medium text-amber-700">
+        Últimas observaciones ({observaciones.length})
+      </summary>
+      <ul className="mt-1 flex flex-col gap-1.5 border-l-2 border-amber-200 pl-2">
+        {observaciones.map((registro) => (
+          <li key={registro.id}>
+            <span className="text-muted">
+              {registro.fecha_realizada} · {registro.tipo_tarea_nombre} · {registro.usuario_nombre}
+            </span>
+            <p>{registro.observaciones}</p>
+          </li>
+        ))}
+      </ul>
+      <Link href={`/equipos/${equipoId}`} className="mt-1 inline-block text-primary hover:underline">
+        Ver todas en la ficha
+      </Link>
+    </details>
   );
 }
 
@@ -77,31 +111,15 @@ export function EquipoTable({
   mostrarActividad,
 }: EquipoTableProps) {
   const seleccionable = !!onToggleSeleccion;
-  const [estadosPorEquipo, setEstadosPorEquipo] = useState<Record<number, EstadoTarea[]>>({});
-  const [etiquetasPorEquipo, setEtiquetasPorEquipo] = useState<Record<number, EquipoEtiqueta[]>>({});
+  const [resumenPorEquipo, setResumenPorEquipo] = useState<Record<number, ResumenEquipo>>({});
 
   useEffect(() => {
-    if (!mostrarActividad) return;
+    if (!mostrarActividad || equipos.length === 0) return;
     let cancelado = false;
-    Promise.all(
-      equipos.map((equipo) =>
-        apiClient
-          .get<EstadoTarea[]>(`/estado/equipo/${equipo.id}`)
-          .then((estados) => [equipo.id, estados] as const)
-      )
-    ).then((resultados) => {
+    const ids = equipos.map((equipo) => equipo.id).join(",");
+    apiClient.get<ResumenEquipo[]>(`/equipos/resumen?ids=${ids}`).then((resumenes) => {
       if (cancelado) return;
-      setEstadosPorEquipo(Object.fromEntries(resultados));
-    });
-    Promise.all(
-      equipos.map((equipo) =>
-        apiClient
-          .get<EquipoEtiqueta[]>(`/equipos/${equipo.id}/etiquetas`)
-          .then((etiquetas) => [equipo.id, etiquetas] as const)
-      )
-    ).then((resultados) => {
-      if (cancelado) return;
-      setEtiquetasPorEquipo(Object.fromEntries(resultados));
+      setResumenPorEquipo(Object.fromEntries(resumenes.map((r) => [r.equipo_id, r])));
     });
     return () => {
       cancelado = true;
@@ -154,14 +172,10 @@ export function EquipoTable({
                     {equipo.activo ? "Activo" : "Archivado"}
                   </span>
                   {equipo.estado_operativo !== "activo" && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTILOS_ESTADO[equipo.estado_operativo]}`}
-                    >
-                      {ETIQUETAS_ESTADO[equipo.estado_operativo]}
-                    </span>
+                    <EstadoOperativoBadge estado={equipo.estado_operativo} />
                   )}
                   {mostrarActividad &&
-                    (etiquetasPorEquipo[equipo.id] ?? []).map((asignacion) => (
+                    (resumenPorEquipo[equipo.id]?.etiquetas ?? []).map((asignacion) => (
                       <span
                         key={asignacion.id}
                         className={`rounded-full border px-2 py-0.5 text-xs font-medium ${ESTILOS_COLOR[asignacion.etiqueta.color]}`}
@@ -174,13 +188,17 @@ export function EquipoTable({
               {mostrarActividad && (
                 <td className="min-w-[16rem] px-5 py-2.5 align-top">
                   <div className="flex flex-col gap-1">
-                    {(estadosPorEquipo[equipo.id] ?? []).map((estadoTarea) => (
+                    {(resumenPorEquipo[equipo.id]?.estados ?? []).map((estadoTarea) => (
                       <FilaActividad
                         key={estadoTarea.tipo_tarea_id}
                         equipo={equipo}
                         estadoTarea={estadoTarea}
                       />
                     ))}
+                    <UltimasObservaciones
+                      equipoId={equipo.id}
+                      observaciones={resumenPorEquipo[equipo.id]?.observaciones ?? []}
+                    />
                   </div>
                 </td>
               )}

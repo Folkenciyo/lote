@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.core.security import create_access_token
 from app.models.equipo import Equipo
 from app.models.registro import Registro
 from app.models.tipo_tarea import TipoTarea
@@ -50,3 +51,15 @@ def test_estado_mes_ignora_registros_de_otros_meses_aunque_esten_al_dia(db_sessi
 
     estado_febrero = estado_mes(db_session, 2026, 2)
     assert estado_febrero[equipo.id][tarea.id] is False
+
+
+def test_estado_mes_con_mes_invalido_devuelve_422(client, db_session):
+    usuario = Usuario(email="u@u.com", password_hash="x", nombre="U", rol="tecnico")
+    db_session.add(usuario)
+    db_session.commit()
+    token = create_access_token(subject=usuario.email, rol=usuario.rol)
+
+    response = client.get(
+        "/api/estado/mes/2026-13", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 422

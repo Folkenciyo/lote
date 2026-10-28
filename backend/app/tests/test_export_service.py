@@ -15,6 +15,7 @@ def test_construir_filas_export_transforma_estados_en_filas_planas():
                 periodicidad_dias=30,
                 fecha_ultimo_registro=date(2026, 1, 1),
                 usuario_ultimo_registro="Ana",
+                observaciones_ultimo_registro=None,
                 estado="al_dia",
             ),
             EstadoTarea(
@@ -23,6 +24,7 @@ def test_construir_filas_export_transforma_estados_en_filas_planas():
                 periodicidad_dias=30,
                 fecha_ultimo_registro=None,
                 usuario_ultimo_registro=None,
+                observaciones_ultimo_registro=None,
                 estado="sin_registro",
             ),
         ]

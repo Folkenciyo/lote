@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import require_autenticado
 from app.models.equipo import Equipo
-from app.services.estado_service import estado_equipo, estado_mes
+from app.services.estado_service import EstadoTarea, estado_equipo, estado_mes
 
 router = APIRouter(
     prefix="/api/estado", tags=["estado"], dependencies=[Depends(require_autenticado)]
@@ -18,10 +18,11 @@ class EstadoTareaOut(BaseModel):
     periodicidad_dias: int
     fecha_ultimo_registro: str | None
     usuario_ultimo_registro: str | None
+    observaciones_ultimo_registro: str | None
     estado: str
 
 
-def _serializar(estados) -> list[EstadoTareaOut]:
+def serializar_estados(estados: list[EstadoTarea]) -> list[EstadoTareaOut]:
     return [
         EstadoTareaOut(
             tipo_tarea_id=e.tipo_tarea_id,
@@ -31,6 +32,7 @@ def _serializar(estados) -> list[EstadoTareaOut]:
                 e.fecha_ultimo_registro.isoformat() if e.fecha_ultimo_registro else None
             ),
             usuario_ultimo_registro=e.usuario_ultimo_registro,
+            observaciones_ultimo_registro=e.observaciones_ultimo_registro,
             estado=e.estado,
         )
         for e in estados
@@ -45,7 +47,7 @@ def estado_de_equipo(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Equipo no encontrado"
         )
-    return _serializar(estado_equipo(db, equipo_id))
+    return serializar_estados(estado_equipo(db, equipo_id))
 
 
 @router.get("/mes/{anio_mes}", response_model=dict[int, dict[int, bool]])
@@ -60,4 +62,9 @@ def estado_de_mes(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Formato esperado: yyyy-mm",
         ) from exc
+    if not 1 <= mes <= 12:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El mes debe estar entre 01 y 12",
+        )
     return estado_mes(db, anio, mes)

@@ -1,3 +1,5 @@
+import { fechaLocalISO } from "@/lib/fechas";
+
 export interface PlanDiarioItem {
   id: string;
   equipoId: number;
@@ -8,11 +10,11 @@ export interface PlanDiarioItem {
 }
 
 function claveHoy(): string {
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = fechaLocalISO();
   return `lote:plan-diario:${hoy}`;
 }
 
-function idItem(equipoId: number, tipoTareaId: number): string {
+export function idItem(equipoId: number, tipoTareaId: number): string {
   return `${equipoId}:${tipoTareaId}`;
 }
 

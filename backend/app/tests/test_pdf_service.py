@@ -21,6 +21,7 @@ def test_generar_pdf_equipo_devuelve_bytes_pdf_validos():
             periodicidad_dias=30,
             fecha_ultimo_registro=date(2026, 1, 1),
             usuario_ultimo_registro="Ana",
+            observaciones_ultimo_registro=None,
             estado="al_dia",
         )
     ]

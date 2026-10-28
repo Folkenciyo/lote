@@ -1,5 +1,10 @@
+from datetime import date, timedelta
+
 from app.core.security import create_access_token, hash_password
 from app.models.equipo import Equipo
+from app.models.etiqueta import EquipoEtiqueta, Etiqueta
+from app.models.registro import Registro
+from app.models.tipo_tarea import TipoTarea
 from app.models.usuario import Usuario
 
 
@@ -132,7 +137,7 @@ def test_equipo_nace_con_estado_operativo_activo(client, db_session):
     assert response.json()["estado_operativo"] == "activo"
 
 
-def test_tecnico_no_puede_cambiar_estado_operativo(client, db_session):
+def test_tecnico_puede_marcar_equipo_como_averiado(client, db_session):
     tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
     equipo = Equipo(codigo="1002")
     db_session.add(equipo)
@@ -140,10 +145,27 @@ def test_tecnico_no_puede_cambiar_estado_operativo(client, db_session):
 
     response = client.post(
         f"/api/equipos/{equipo.id}/estado",
-        json={"estado_nuevo": "taller"},
+        json={"estado_nuevo": "averiado", "motivo": "fuga de aceite"},
+        headers=_auth_headers(tecnico),
+    )
+    assert response.status_code == 200
+    assert response.json()["estado_operativo"] == "averiado"
+
+
+def test_tecnico_no_puede_reactivar_equipo(client, db_session):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+    equipo = Equipo(codigo="1002", estado_operativo="taller")
+    db_session.add(equipo)
+    db_session.commit()
+
+    response = client.post(
+        f"/api/equipos/{equipo.id}/estado",
+        json={"estado_nuevo": "activo"},
         headers=_auth_headers(tecnico),
     )
     assert response.status_code == 403
+    db_session.refresh(equipo)
+    assert equipo.estado_operativo == "taller"
 
 
 def test_cambiar_estado_a_averiado(client, db_session):
@@ -249,3 +271,93 @@ def test_actualizar_lectura_no_toca_otros_campos(client, db_session):
     )
     assert response.status_code == 200
     assert response.json()["marca"] == "Volvo"
+
+
+def _crear_registro(db_session, equipo, tarea, usuario, fecha, observaciones=None):
+    registro = Registro(
+        equipo_id=equipo.id,
+        tipo_tarea_id=tarea.id,
+        usuario_id=usuario.id,
+        fecha_realizada=fecha,
+        observaciones=observaciones,
+    )
+    db_session.add(registro)
+    db_session.commit()
+    return registro
+
+
+def test_resumen_equipos_devuelve_estados_etiquetas_y_observaciones(client, db_session):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+    equipo = Equipo(codigo="1002")
+    otro = Equipo(codigo="1003")
+    tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
+    etiqueta = Etiqueta(nombre="Pinchazo", estado_operativo="taller", color="red")
+    db_session.add_all([equipo, otro, tarea, etiqueta])
+    db_session.commit()
+    db_session.add(
+        EquipoEtiqueta(
+            equipo_id=equipo.id, etiqueta_id=etiqueta.id, usuario_id=tecnico.id
+        )
+    )
+    db_session.commit()
+    hoy = date.today()
+    _crear_registro(db_session, equipo, tarea, tecnico, hoy - timedelta(days=3), "a")
+    _crear_registro(db_session, equipo, tarea, tecnico, hoy - timedelta(days=2), "")
+    _crear_registro(db_session, equipo, tarea, tecnico, hoy, "manguera rota")
+
+    response = client.get(
+        f"/api/equipos/resumen?ids={equipo.id},{otro.id}",
+        headers=_auth_headers(tecnico),
+    )
+
+    assert response.status_code == 200
+    resumen = {item["equipo_id"]: item for item in response.json()}
+    assert resumen[equipo.id]["codigo"] == "1002"
+    assert resumen[equipo.id]["estado_operativo"] == "activo"
+    assert resumen[equipo.id]["estados"][0]["observaciones_ultimo_registro"] == (
+        "manguera rota"
+    )
+    assert [e["etiqueta"]["nombre"] for e in resumen[equipo.id]["etiquetas"]] == [
+        "Pinchazo"
+    ]
+    assert [r["observaciones"] for r in resumen[equipo.id]["observaciones"]] == [
+        "manguera rota",
+        "a",
+    ]
+    assert resumen[otro.id]["observaciones"] == []
+    assert resumen[otro.id]["estados"][0]["estado"] == "sin_registro"
+
+
+def test_resumen_equipos_limita_observaciones_por_equipo(client, db_session):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+    equipo = Equipo(codigo="1002")
+    tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
+    db_session.add_all([equipo, tarea])
+    db_session.commit()
+    hoy = date.today()
+    for dias in range(8):
+        _crear_registro(
+            db_session, equipo, tarea, tecnico, hoy - timedelta(days=dias), f"o{dias}"
+        )
+
+    response = client.get(
+        f"/api/equipos/resumen?ids={equipo.id}", headers=_auth_headers(tecnico)
+    )
+
+    observaciones = response.json()[0]["observaciones"]
+    assert [r["observaciones"] for r in observaciones] == [
+        "o0",
+        "o1",
+        "o2",
+        "o3",
+        "o4",
+    ]
+
+
+def test_resumen_equipos_con_ids_invalidos_devuelve_422(client, db_session):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+
+    response = client.get(
+        "/api/equipos/resumen?ids=1,abc", headers=_auth_headers(tecnico)
+    )
+    assert response.status_code == 422
