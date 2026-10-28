@@ -42,16 +42,9 @@ def exportar_estado(db: Session = Depends(get_db)) -> Response:
     )
 
 
-@router.get("/equipo/{equipo_id}.pdf")
-def exportar_equipo_pdf(equipo_id: int, db: Session = Depends(get_db)) -> Response:
-    equipo = db.get(Equipo, equipo_id)
-    if equipo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Equipo no encontrado"
-        )
-
-    estados = estado_equipo(db, equipo_id)
-    historial = cargar_historial_con_usuario(db, equipo_id)
+def respuesta_pdf_equipo(db: Session, equipo: Equipo) -> Response:
+    estados = estado_equipo(db, equipo.id)
+    historial = cargar_historial_con_usuario(db, equipo.id)
     contenido = generar_pdf_equipo(equipo, estados, historial)
 
     return Response(
@@ -61,6 +54,16 @@ def exportar_equipo_pdf(equipo_id: int, db: Session = Depends(get_db)) -> Respon
             "Content-Disposition": f"attachment; filename=equipo-{equipo.codigo}.pdf"
         },
     )
+
+
+@router.get("/equipo/{equipo_id}.pdf")
+def exportar_equipo_pdf(equipo_id: int, db: Session = Depends(get_db)) -> Response:
+    equipo = db.get(Equipo, equipo_id)
+    if equipo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Equipo no encontrado"
+        )
+    return respuesta_pdf_equipo(db, equipo)
 
 
 @router.get("/equipo/{equipo_id}/elementos.pdf")

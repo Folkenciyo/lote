@@ -24,7 +24,7 @@ def get_current_user(
         raise credentials_error from exc
 
     email = payload.get("sub")
-    if email is None:
+    if email is None or payload.get("tipo") is not None:
         raise credentials_error
 
     usuario = db.query(Usuario).filter(Usuario.email == email).first()

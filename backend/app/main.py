@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.auth import router as auth_router
+from app.api.compartir import router as compartir_router
 from app.api.dashboard import router as dashboard_router
 from app.api.elementos import router as elementos_router
 from app.api.equipos import router as equipos_router
@@ -27,6 +28,7 @@ app.include_router(usuarios_router)
 app.include_router(tipos_tarea_router)
 app.include_router(elementos_router)
 app.include_router(etiquetas_router)
+app.include_router(compartir_router)
 
 app.add_middleware(
     CORSMiddleware,

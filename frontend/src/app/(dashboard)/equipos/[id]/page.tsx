@@ -45,7 +45,7 @@ export default function EquipoDetallePage({ params }: { params: Promise<{ id: st
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">Equipo {equipo.codigo}</h1>
-        <CompartirEquipo equipo={equipo} />
+        <CompartirEquipo equipo={equipo} estados={estados} />
       </div>
 
       <EquipoInfoForm equipo={equipo} onActualizado={setEquipo} />

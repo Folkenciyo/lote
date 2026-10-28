@@ -102,7 +102,7 @@ def _parsear_ids(ids: str) -> list[int]:
         ) from exc
 
 
-def _etiquetas_por_equipo(
+def etiquetas_por_equipo(
     db: Session, equipo_ids: list[int]
 ) -> dict[int, list[EquipoEtiquetaOut]]:
     filas = (
@@ -147,7 +147,7 @@ def resumen_equipos(
         for equipo in db.query(Equipo).filter(Equipo.id.in_(equipo_ids))
     }
     estados = estado_de_equipos(db, equipo_ids)
-    etiquetas = _etiquetas_por_equipo(db, equipo_ids)
+    etiquetas = etiquetas_por_equipo(db, equipo_ids)
     observaciones = ultimas_observaciones_por_equipo(
         db, equipo_ids, OBSERVACIONES_EN_RESUMEN
     )

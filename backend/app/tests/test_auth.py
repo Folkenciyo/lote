@@ -43,7 +43,11 @@ def test_decode_access_token_expirado_lanza_error():
 
 def test_decode_access_token_manipulado_lanza_error():
     token = create_access_token(subject="a@a.com", rol="tecnico")
-    token_manipulado = token[:-1] + ("A" if token[-1] != "A" else "B")
+    # Se cambia el primer carácter de la firma, no el último: en base64url el
+    # último lleva 2 bits de relleno y cambiarlo puede dejar la firma intacta.
+    cabecera_y_datos, firma = token.rsplit(".", 1)
+    primero = "A" if firma[0] != "A" else "B"
+    token_manipulado = f"{cabecera_y_datos}.{primero}{firma[1:]}"
     with pytest.raises(jwt.InvalidTokenError):
         decode_access_token(token_manipulado)
 
