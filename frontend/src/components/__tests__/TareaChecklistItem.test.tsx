@@ -5,6 +5,7 @@ import { TareaChecklistItem } from "@/components/TareaChecklistItem";
 import { PlanDiarioProvider } from "@/contexts/PlanDiarioContext";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient, ApiError } from "@/lib/apiClient";
+import { fechaLocalISO } from "@/lib/fechas";
 import { EstadoTarea } from "@/types";
 
 function renderConProvider(ui: React.ReactElement) {
@@ -25,6 +26,7 @@ const estadoTarea: EstadoTarea = {
   periodicidad_dias: 30,
   fecha_ultimo_registro: null,
   usuario_ultimo_registro: null,
+  observaciones_ultimo_registro: null,
   estado: "sin_registro",
 };
 
@@ -139,7 +141,7 @@ describe("TareaChecklistItem", () => {
     expect(screen.getByText("Último: 2026-09-01 — Ana")).toBeInTheDocument();
   });
 
-  it("no muestra el selector de estado del vehículo a un técnico", () => {
+  it("muestra el selector de estado del vehículo también a un técnico", () => {
     renderConProvider(
       <TareaChecklistItem
         equipoId={7}
@@ -150,9 +152,25 @@ describe("TareaChecklistItem", () => {
       />,
     );
 
-    expect(
-      screen.queryByTitle("Cambiar estado del vehículo al registrar"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTitle("Cambiar estado del vehículo al registrar")).toBeInTheDocument();
+  });
+
+  it("muestra la observación del último registro", () => {
+    renderConProvider(
+      <TareaChecklistItem
+        equipoId={7}
+        equipoCodigo="1002"
+        estadoTarea={{
+          ...estadoTarea,
+          fecha_ultimo_registro: "2026-09-01",
+          observaciones_ultimo_registro: "fuga en el cárter",
+        }}
+        onRegistrado={jest.fn()}
+        onEquipoActualizado={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText("fuga en el cárter")).toBeInTheDocument();
   });
 
   it("cambia el estado del vehículo si un supervisor elige uno al marcar realizado", async () => {
@@ -224,8 +242,27 @@ describe("TareaChecklistItem", () => {
     await user.click(screen.getByRole("button", { name: "+ Lista del día" }));
 
     expect(apiClient.post).not.toHaveBeenCalled();
-    expect(JSON.parse(window.localStorage.getItem(`lote:plan-diario:${new Date().toISOString().slice(0, 10)}`) ?? "[]")).toEqual([
+    expect(JSON.parse(window.localStorage.getItem(`lote:plan-diario:${fechaLocalISO()}`) ?? "[]")).toEqual([
       expect.objectContaining({ equipoId: 7, equipoCodigo: "1002", tipoTareaId: 3, hecho: false }),
     ]);
+  });
+
+  it("marca la tarea como ya añadida y avisa de que se ha guardado", async () => {
+    const user = userEvent.setup();
+
+    renderConProvider(
+      <TareaChecklistItem
+        equipoId={7}
+        equipoCodigo="1002"
+        estadoTarea={estadoTarea}
+        onRegistrado={jest.fn()}
+        onEquipoActualizado={jest.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "+ Lista del día" }));
+
+    expect(screen.getByRole("button", { name: "✓ En la lista" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("ACEITE (1002) añadida a la lista del día");
   });
 });

@@ -27,6 +27,7 @@ class EstadoTarea:
     periodicidad_dias: int
     fecha_ultimo_registro: date | None
     usuario_ultimo_registro: str | None
+    observaciones_ultimo_registro: str | None
     estado: str
 
 
@@ -109,59 +110,11 @@ def _nombres_por_usuario_id(db: Session, registros: list[Registro]) -> dict[int,
     return dict(filas)
 
 
-def estado_equipo(
-    db: Session, equipo_id: int, hoy: date | None = None
-) -> list[EstadoTarea]:
-    hoy = hoy or date.today()
-    equipo = db.get(Equipo, equipo_id)
-    tareas = db.query(TipoTarea).order_by(TipoTarea.id).all()
-    ultimos_registros = ultimos_registros_por_par(db, [equipo_id])
-    ultimos = {registro.tipo_tarea_id: registro for registro in ultimos_registros}
-    nombres_por_usuario_id = _nombres_por_usuario_id(db, ultimos_registros)
-    lectura_actual_horas = equipo.lectura_actual_horas if equipo else None
-
-    resultado = []
-    for tarea in tareas:
-        ultimo = ultimos.get(tarea.id)
-        fecha_ultimo = ultimo.fecha_realizada if ultimo else None
-        estado_dias = calcular_estado(fecha_ultimo, tarea.periodicidad_dias, hoy)
-        estado = combinar_estado_con_horas(
-            estado_dias,
-            ultimo.horas_trabajo if ultimo else None,
-            tarea.limite_horas,
-            lectura_actual_horas,
-        )
-        resultado.append(
-            EstadoTarea(
-                tipo_tarea_id=tarea.id,
-                tipo_tarea_nombre=tarea.nombre,
-                periodicidad_dias=tarea.periodicidad_dias,
-                fecha_ultimo_registro=fecha_ultimo,
-                usuario_ultimo_registro=(
-                    nombres_por_usuario_id.get(ultimo.usuario_id) if ultimo else None
-                ),
-                estado=estado,
-            )
-        )
-    return resultado
-
-
-def estado_equipos(
-    db: Session, hoy: date | None = None
+def _estados_por_equipo(
+    db: Session, equipos: list[Equipo], hoy: date
 ) -> dict[int, list[EstadoTarea]]:
-    hoy = hoy or date.today()
-    equipos = (
-        db.query(Equipo)
-        .filter(
-            Equipo.activo.is_(True),
-            Equipo.estado_operativo != "baja",
-        )
-        .all()
-    )
     tareas = db.query(TipoTarea).order_by(TipoTarea.id).all()
-    equipo_ids = [e.id for e in equipos]
-
-    ultimos_registros = ultimos_registros_por_par(db, equipo_ids)
+    ultimos_registros = ultimos_registros_por_par(db, [e.id for e in equipos])
     ultimos_por_equipo: dict[int, dict[int, Registro]] = {e.id: {} for e in equipos}
     for registro in ultimos_registros:
         ultimos_por_equipo[registro.equipo_id][registro.tipo_tarea_id] = registro
@@ -192,11 +145,46 @@ def estado_equipos(
                         if ultimo
                         else None
                     ),
+                    observaciones_ultimo_registro=(
+                        ultimo.observaciones if ultimo else None
+                    ),
                     estado=estado,
                 )
             )
         resultado[equipo.id] = equipo_estados
     return resultado
+
+
+def estado_equipo(
+    db: Session, equipo_id: int, hoy: date | None = None
+) -> list[EstadoTarea]:
+    equipo = db.get(Equipo, equipo_id)
+    if equipo is None:
+        return []
+    return _estados_por_equipo(db, [equipo], hoy or date.today())[equipo_id]
+
+
+def estado_de_equipos(
+    db: Session, equipo_ids: list[int], hoy: date | None = None
+) -> dict[int, list[EstadoTarea]]:
+    """Estado de varios equipos concretos (activos o no) en un solo lote de
+    consultas — para el buscador, que no debe hacer una petición por equipo."""
+    equipos = db.query(Equipo).filter(Equipo.id.in_(equipo_ids)).all()
+    return _estados_por_equipo(db, equipos, hoy or date.today())
+
+
+def estado_equipos(
+    db: Session, hoy: date | None = None
+) -> dict[int, list[EstadoTarea]]:
+    equipos = (
+        db.query(Equipo)
+        .filter(
+            Equipo.activo.is_(True),
+            Equipo.estado_operativo != "baja",
+        )
+        .all()
+    )
+    return _estados_por_equipo(db, equipos, hoy or date.today())
 
 
 def estado_mes(db: Session, anio: int, mes: int) -> dict[int, dict[int, bool]]:

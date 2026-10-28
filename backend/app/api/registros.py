@@ -1,6 +1,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -13,7 +14,7 @@ from app.models.usuario import Usuario
 router = APIRouter(prefix="/api/registros", tags=["registros"])
 
 
-def _a_registro_out(
+def a_registro_out(
     registro: Registro,
     usuario_nombre: str,
     tipo_tarea_nombre: str,
@@ -63,7 +64,7 @@ def crear_registro(
     db.add(registro)
     db.commit()
     db.refresh(registro)
-    return _a_registro_out(registro, usuario.nombre, tipo_tarea.nombre, equipo.codigo)
+    return a_registro_out(registro, usuario.nombre, tipo_tarea.nombre, equipo.codigo)
 
 
 @router.get("", response_model=list[RegistroOut])
@@ -72,6 +73,7 @@ def listar_registros(
     tipo_tarea_id: int | None = None,
     desde: date | None = None,
     hasta: date | None = None,
+    con_observaciones: bool = False,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ) -> list[RegistroOut]:
@@ -89,10 +91,12 @@ def listar_registros(
         query = query.filter(Registro.fecha_realizada >= desde)
     if hasta is not None:
         query = query.filter(Registro.fecha_realizada <= hasta)
+    if con_observaciones:
+        query = query.filter(func.trim(Registro.observaciones) != "")
 
     filas = query.order_by(Registro.fecha_realizada.desc(), Registro.id.desc()).all()
     return [
-        _a_registro_out(registro, nombre_usuario, nombre_tarea, codigo_equipo)
+        a_registro_out(registro, nombre_usuario, nombre_tarea, codigo_equipo)
         for registro, nombre_usuario, nombre_tarea, codigo_equipo in filas
     ]
 

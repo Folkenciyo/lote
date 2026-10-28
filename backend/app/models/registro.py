@@ -1,6 +1,6 @@
 from datetime import UTC, date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,9 +35,9 @@ class RegistroCreate(BaseModel):
     equipo_id: int
     tipo_tarea_id: int
     fecha_realizada: date
-    observaciones: str | None = None
-    horas_trabajo: int | None = None
-    kilometros: int | None = None
+    observaciones: str | None = Field(default=None, max_length=500)
+    horas_trabajo: int | None = Field(default=None, ge=0)
+    kilometros: int | None = Field(default=None, ge=0)
 
 
 class RegistroOut(BaseModel):

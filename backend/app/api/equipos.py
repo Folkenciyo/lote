@@ -1,9 +1,12 @@
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.api.estado import EstadoTareaOut, serializar_estados
+from app.api.registros import a_registro_out
 from app.core.database import get_db
 from app.core.dependencies import require_autenticado, require_supervisor
 from app.models.equipo import (
@@ -24,7 +27,10 @@ from app.models.etiqueta import (
     Etiqueta,
     EtiquetaOut,
 )
+from app.models.registro import RegistroOut
 from app.models.usuario import Usuario
+from app.services.estado_service import estado_de_equipos
+from app.services.observaciones_service import ultimas_observaciones_por_equipo
 
 router = APIRouter(prefix="/api/equipos", tags=["equipos"])
 
@@ -72,6 +78,91 @@ def listar_equipos(
             )
     filas = query.order_by(Equipo.codigo).all()
     return [_a_equipo_out(equipo, nombre) for equipo, nombre in filas]
+
+
+OBSERVACIONES_EN_RESUMEN = 5
+
+
+class ResumenEquipoOut(BaseModel):
+    equipo_id: int
+    codigo: str
+    estado_operativo: str
+    estados: list[EstadoTareaOut]
+    etiquetas: list[EquipoEtiquetaOut]
+    observaciones: list[RegistroOut]
+
+
+def _parsear_ids(ids: str) -> list[int]:
+    try:
+        return [int(parte) for parte in ids.split(",") if parte.strip()]
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="ids debe ser una lista de enteros separados por coma",
+        ) from exc
+
+
+def _etiquetas_por_equipo(
+    db: Session, equipo_ids: list[int]
+) -> dict[int, list[EquipoEtiquetaOut]]:
+    filas = (
+        db.query(EquipoEtiqueta, Etiqueta, Usuario.nombre)
+        .join(Etiqueta, EquipoEtiqueta.etiqueta_id == Etiqueta.id)
+        .join(Usuario, EquipoEtiqueta.usuario_id == Usuario.id)
+        .filter(EquipoEtiqueta.equipo_id.in_(equipo_ids))
+        .order_by(EquipoEtiqueta.created_at.desc())
+        .all()
+    )
+    resultado: dict[int, list[EquipoEtiquetaOut]] = {
+        equipo_id: [] for equipo_id in equipo_ids
+    }
+    for asignacion, etiqueta, nombre in filas:
+        resultado[asignacion.equipo_id].append(
+            EquipoEtiquetaOut(
+                id=asignacion.id,
+                equipo_id=asignacion.equipo_id,
+                etiqueta=EtiquetaOut.model_validate(etiqueta),
+                usuario_id=asignacion.usuario_id,
+                usuario_nombre=nombre,
+                created_at=asignacion.created_at.isoformat(),
+            )
+        )
+    return resultado
+
+
+@router.get(
+    "/resumen",
+    response_model=list[ResumenEquipoOut],
+    dependencies=[Depends(require_autenticado)],
+)
+def resumen_equipos(
+    ids: str = Query(..., description="ids de equipo separados por coma"),
+    db: Session = Depends(get_db),
+) -> list[ResumenEquipoOut]:
+    """Estado de tareas, etiquetas y últimas observaciones de varios equipos
+    en una sola petición — lo que muestra el buscador por cada resultado."""
+    equipo_ids = _parsear_ids(ids)
+    equipos = {
+        equipo.id: equipo
+        for equipo in db.query(Equipo).filter(Equipo.id.in_(equipo_ids))
+    }
+    estados = estado_de_equipos(db, equipo_ids)
+    etiquetas = _etiquetas_por_equipo(db, equipo_ids)
+    observaciones = ultimas_observaciones_por_equipo(
+        db, equipo_ids, OBSERVACIONES_EN_RESUMEN
+    )
+    return [
+        ResumenEquipoOut(
+            equipo_id=equipo_id,
+            codigo=equipos[equipo_id].codigo,
+            estado_operativo=equipos[equipo_id].estado_operativo,
+            estados=serializar_estados(estados[equipo_id]),
+            etiquetas=etiquetas[equipo_id],
+            observaciones=[a_registro_out(*fila) for fila in observaciones[equipo_id]],
+        )
+        for equipo_id in equipo_ids
+        if equipo_id in equipos
+    ]
 
 
 @router.post(
@@ -176,17 +267,20 @@ def actualizar_lectura_equipo(
     return _a_equipo_out(equipo, creador.nombre if creador else None)
 
 
-@router.post(
-    "/{equipo_id}/estado",
-    response_model=EquipoOut,
-    dependencies=[Depends(require_supervisor)],
-)
+@router.post("/{equipo_id}/estado", response_model=EquipoOut)
 def cambiar_estado_equipo(
     equipo_id: int,
     payload: CambioEstadoEquipoCreate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(require_supervisor),
+    usuario: Usuario = Depends(require_autenticado),
 ) -> EquipoOut:
+    """Cualquier usuario puede marcar un equipo como taller/averiado/baja (lo
+    detecta quien hace la tarea), pero solo un supervisor puede reactivarlo."""
+    if payload.estado_nuevo == "activo" and usuario.rol != "supervisor":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo un supervisor puede reactivar un equipo",
+        )
     if payload.estado_nuevo not in ESTADOS_OPERATIVOS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

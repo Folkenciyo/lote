@@ -1,7 +1,7 @@
 "use client";
 
 import { EstadoBadge } from "@/components/EstadoBadge";
-import { RoleGate } from "@/components/RoleGate";
+import { ObservacionAviso } from "@/components/ObservacionAviso";
 import { useRegistrarTarea } from "@/hooks/useRegistrarTarea";
 import { PlanDiarioItem } from "@/lib/planDiario";
 import { EstadoOperativo, EstadoTarea } from "@/types";
@@ -44,8 +44,12 @@ export function PlanDiarioItemRow({
 
   if (item.hecho) {
     return (
-      <div className="flex items-center justify-between gap-4 border-b border-card-border/60 px-5 py-3 last:border-b-0">
-        <span className="text-muted line-through">{item.tipoTareaNombre}</span>
+      <div className="flex items-center justify-between gap-4 border-b border-l-4 border-b-card-border/60 border-l-green-500 bg-green-50 px-5 py-3 last:border-b-0">
+        <span className="flex items-center gap-2 font-medium text-green-700">
+          <span aria-hidden="true">✓</span>
+          <span className="line-through">{item.tipoTareaNombre}</span>
+          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs no-underline">Hecha</span>
+        </span>
         <button
           onClick={onQuitar}
           aria-label="Quitar de la lista"
@@ -73,6 +77,9 @@ export function PlanDiarioItemRow({
             </span>
           )}
         </div>
+        {estadoTarea?.observaciones_ultimo_registro && (
+          <ObservacionAviso texto={estadoTarea.observaciones_ultimo_registro} />
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -96,21 +103,19 @@ export function PlanDiarioItemRow({
           onChange={(event) => setKilometros(event.target.value)}
           className="w-20 rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
         />
-        <RoleGate rol="supervisor">
-          <select
-            value={estadoNuevo}
-            onChange={(event) => setEstadoNuevo(event.target.value as EstadoOperativo | "")}
-            title="Cambiar estado del vehículo al registrar"
-            className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-          >
-            <option value="">Estado del vehículo…</option>
-            {Object.entries(ETIQUETAS_ESTADO_OPERATIVO).map(([valor, etiqueta]) => (
-              <option key={valor} value={valor}>
-                {etiqueta}
-              </option>
-            ))}
-          </select>
-        </RoleGate>
+        <select
+          value={estadoNuevo}
+          onChange={(event) => setEstadoNuevo(event.target.value as EstadoOperativo | "")}
+          title="Cambiar estado del vehículo al registrar"
+          className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+        >
+          <option value="">Estado del vehículo…</option>
+          {Object.entries(ETIQUETAS_ESTADO_OPERATIVO).map(([valor, etiqueta]) => (
+            <option key={valor} value={valor}>
+              {etiqueta}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           disabled={enviando}

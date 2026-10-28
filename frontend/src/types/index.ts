@@ -44,6 +44,7 @@ export interface EstadoTarea {
   periodicidad_dias: number;
   fecha_ultimo_registro: string | null;
   usuario_ultimo_registro: string | null;
+  observaciones_ultimo_registro: string | null;
   estado: Estado;
 }
 
@@ -157,4 +158,13 @@ export interface EquipoEtiqueta {
   usuario_id: number;
   usuario_nombre: string;
   created_at: string;
+}
+
+export interface ResumenEquipo {
+  equipo_id: number;
+  codigo: string;
+  estado_operativo: EstadoOperativo;
+  estados: EstadoTarea[];
+  etiquetas: EquipoEtiqueta[];
+  observaciones: Registro[];
 }

@@ -149,3 +149,65 @@ def test_crear_registro_sin_horas_ni_kilometros_devuelve_null(client, db_session
     assert response.status_code == 201
     assert response.json()["horas_trabajo"] is None
     assert response.json()["kilometros"] is None
+
+
+def _payload_registro(equipo, tarea, **extra):
+    return {
+        "equipo_id": equipo.id,
+        "tipo_tarea_id": tarea.id,
+        "fecha_realizada": str(date.today()),
+        **extra,
+    }
+
+
+def test_crear_registro_con_observaciones_demasiado_largas_devuelve_422(
+    client, db_session
+):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+    equipo = Equipo(codigo="1002")
+    tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
+    db_session.add_all([equipo, tarea])
+    db_session.commit()
+
+    response = client.post(
+        "/api/registros",
+        json=_payload_registro(equipo, tarea, observaciones="x" * 501),
+        headers=_auth_headers(tecnico),
+    )
+    assert response.status_code == 422
+
+
+def test_crear_registro_con_horas_negativas_devuelve_422(client, db_session):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+    equipo = Equipo(codigo="1002")
+    tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
+    db_session.add_all([equipo, tarea])
+    db_session.commit()
+
+    response = client.post(
+        "/api/registros",
+        json=_payload_registro(equipo, tarea, horas_trabajo=-5),
+        headers=_auth_headers(tecnico),
+    )
+    assert response.status_code == 422
+
+
+def test_listar_registros_con_observaciones_excluye_vacias(client, db_session):
+    tecnico = _crear_usuario(db_session, "tec@x.com", "tecnico")
+    equipo = Equipo(codigo="1002")
+    tarea = TipoTarea(nombre="ACEITE", categoria="engrase", periodicidad_dias=30)
+    db_session.add_all([equipo, tarea])
+    db_session.commit()
+    for observaciones in (None, "", "   ", "fuga en el carter"):
+        client.post(
+            "/api/registros",
+            json=_payload_registro(equipo, tarea, observaciones=observaciones),
+            headers=_auth_headers(tecnico),
+        )
+
+    response = client.get(
+        f"/api/registros?equipo_id={equipo.id}&con_observaciones=true",
+        headers=_auth_headers(tecnico),
+    )
+
+    assert [r["observaciones"] for r in response.json()] == ["fuga en el carter"]

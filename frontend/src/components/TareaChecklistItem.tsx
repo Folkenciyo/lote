@@ -1,7 +1,7 @@
 "use client";
 
 import { EstadoBadge } from "@/components/EstadoBadge";
-import { RoleGate } from "@/components/RoleGate";
+import { ObservacionAviso } from "@/components/ObservacionAviso";
 import { usePlanDiario } from "@/contexts/PlanDiarioContext";
 import { useRegistrarTarea } from "@/hooks/useRegistrarTarea";
 import { Equipo, EstadoOperativo, EstadoTarea } from "@/types";
@@ -29,7 +29,8 @@ export function TareaChecklistItem({
   onRegistrado: () => void;
   onEquipoActualizado: (equipo: Equipo) => void;
 }) {
-  const { agregarItems } = usePlanDiario();
+  const { agregarItems, estaEnLista } = usePlanDiario();
+  const enLista = estaEnLista(equipoId, estadoTarea.tipo_tarea_id);
   const {
     observaciones,
     setObservaciones,
@@ -64,6 +65,9 @@ export function TareaChecklistItem({
             {estadoTarea.usuario_ultimo_registro && ` — ${estadoTarea.usuario_ultimo_registro}`}
           </p>
         )}
+        {estadoTarea.observaciones_ultimo_registro && (
+          <ObservacionAviso texto={estadoTarea.observaciones_ultimo_registro} />
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -78,9 +82,15 @@ export function TareaChecklistItem({
               },
             ])
           }
-          className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-background"
+          disabled={enLista}
+          title={enLista ? "Ya está en la lista del día" : undefined}
+          className={`rounded-lg border px-2.5 py-1.5 text-sm transition-colors ${
+            enLista
+              ? "border-green-200 bg-green-50 font-medium text-green-700"
+              : "border-card-border text-muted hover:bg-background"
+          }`}
         >
-          + Lista del día
+          {enLista ? "✓ En la lista" : "+ Lista del día"}
         </button>
         <input
           type="text"
@@ -103,21 +113,19 @@ export function TareaChecklistItem({
           onChange={(event) => setKilometros(event.target.value)}
           className="w-24 rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
         />
-        <RoleGate rol="supervisor">
-          <select
-            value={estadoNuevo}
-            onChange={(event) => setEstadoNuevo(event.target.value as EstadoOperativo | "")}
-            title="Cambiar estado del vehículo al registrar"
-            className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-          >
-            <option value="">Estado del vehículo…</option>
-            {Object.entries(ETIQUETAS_ESTADO_OPERATIVO).map(([valor, etiqueta]) => (
-              <option key={valor} value={valor}>
-                {etiqueta}
-              </option>
-            ))}
-          </select>
-        </RoleGate>
+        <select
+          value={estadoNuevo}
+          onChange={(event) => setEstadoNuevo(event.target.value as EstadoOperativo | "")}
+          title="Cambiar estado del vehículo al registrar"
+          className="rounded-lg border border-card-border px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+        >
+          <option value="">Estado del vehículo…</option>
+          {Object.entries(ETIQUETAS_ESTADO_OPERATIVO).map(([valor, etiqueta]) => (
+            <option key={valor} value={valor}>
+              {etiqueta}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           disabled={enviando}

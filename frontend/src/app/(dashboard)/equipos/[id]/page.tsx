@@ -9,6 +9,7 @@ import { EstadoOperativoEquipo } from "@/components/EstadoOperativoEquipo";
 import { EtiquetasEquipo } from "@/components/EtiquetasEquipo";
 import { HistorialEquipo } from "@/components/HistorialEquipo";
 import { LecturaActualEquipo } from "@/components/LecturaActualEquipo";
+import { ObservacionesEquipo } from "@/components/ObservacionesEquipo";
 import { TareaChecklistItem } from "@/components/TareaChecklistItem";
 import { useEstadoEquipo } from "@/hooks/useEstadoEquipo";
 import { apiClient } from "@/lib/apiClient";
@@ -50,6 +51,8 @@ export default function EquipoDetallePage({ params }: { params: Promise<{ id: st
       <EquipoInfoForm equipo={equipo} onActualizado={setEquipo} />
 
       <EstadoOperativoEquipo equipo={equipo} onActualizado={setEquipo} />
+
+      <ObservacionesEquipo equipoId={equipoId} refreshKey={historialKey} />
 
       <EtiquetasEquipo equipoId={equipoId} />
 
