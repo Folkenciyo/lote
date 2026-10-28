@@ -1,6 +1,6 @@
 import { EstadoOperativo } from "@/types";
 
-const ETIQUETAS: Record<EstadoOperativo, string> = {
+export const NOMBRES_ESTADO_OPERATIVO: Record<EstadoOperativo, string> = {
   activo: "Activo",
   taller: "En taller",
   averiado: "Averiado",
@@ -17,7 +17,7 @@ const ESTILOS: Record<EstadoOperativo, string> = {
 export function EstadoOperativoBadge({ estado }: { estado: EstadoOperativo }) {
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTILOS[estado]}`}>
-      {ETIQUETAS[estado]}
+      {NOMBRES_ESTADO_OPERATIVO[estado]}
     </span>
   );
 }

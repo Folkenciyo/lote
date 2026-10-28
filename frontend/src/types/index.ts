@@ -168,3 +168,17 @@ export interface ResumenEquipo {
   etiquetas: EquipoEtiqueta[];
   observaciones: Registro[];
 }
+
+export interface EquipoPublico {
+  codigo: string;
+  marca: string | null;
+  modelo: string | null;
+  tipo: string | null;
+  estado_operativo: EstadoOperativo;
+  lectura_actual_horas: number | null;
+  lectura_actual_km: number | null;
+  estados: EstadoTarea[];
+  etiquetas: EquipoEtiqueta[];
+  historial: Registro[];
+  expira: string;
+}
