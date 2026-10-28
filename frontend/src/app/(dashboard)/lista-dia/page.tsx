@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { BotonConfirmar } from "@/components/BotonConfirmar";
 import { EstadoOperativoBadge } from "@/components/EstadoOperativoBadge";
 import { PlanDiarioItemRow } from "@/components/PlanDiarioItemRow";
 import { usePlanDiario } from "@/contexts/PlanDiarioContext";
@@ -25,10 +26,14 @@ function CabeceraEquipo({
   equipoId,
   equipoCodigo,
   resumen,
+  numTareas,
+  onQuitar,
 }: {
   equipoId: number;
   equipoCodigo: string;
   resumen: ResumenEquipo | undefined;
+  numTareas: number;
+  onQuitar: () => void;
 }) {
   const vencidas = resumen?.estados.filter((e) => e.estado === "vencido").length ?? 0;
   const proximas = resumen?.estados.filter((e) => e.estado === "proximo_a_vencer").length ?? 0;
@@ -60,12 +65,22 @@ function CabeceraEquipo({
           )}
         </>
       )}
+      <div className="ml-auto">
+        <BotonConfirmar
+          compacto
+          texto="Quitar vehículo"
+          pregunta={`¿Quitar sus ${numTareas} tarea${numTareas === 1 ? "" : "s"} de la lista?`}
+          textoConfirmar="Sí, quitar"
+          onConfirmar={onQuitar}
+        />
+      </div>
     </div>
   );
 }
 
 export default function ListaDelDiaPage() {
-  const { items, alternarHecho, quitarItem, limpiarHechas } = usePlanDiario();
+  const { items, alternarHecho, quitarItem, quitarEquipo, limpiarHechas, vaciar } =
+    usePlanDiario();
   const [resumenPorEquipo, setResumenPorEquipo] = useState<Record<number, ResumenEquipo>>({});
   const grupos = agruparPorEquipo(items);
   const hayHechas = items.some((item) => item.hecho);
@@ -98,14 +113,24 @@ export default function ListaDelDiaPage() {
             realizado&rdquo; registra la tarea de verdad, igual que desde la ficha del equipo.
           </p>
         </div>
-        {hayHechas && (
-          <button
-            onClick={limpiarHechas}
-            className="shrink-0 rounded-lg border border-card-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-card"
-          >
-            Quitar hechas
-          </button>
-        )}
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {hayHechas && (
+            <button
+              onClick={limpiarHechas}
+              className="shrink-0 rounded-lg border border-card-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-card"
+            >
+              Quitar hechas
+            </button>
+          )}
+          {items.length > 0 && (
+            <BotonConfirmar
+              texto="Vaciar lista"
+              pregunta={`¿Quitar ${items.length === 1 ? "la tarea" : `las ${items.length} tareas`} de ${grupos.size} vehículo${grupos.size === 1 ? "" : "s"}?`}
+              textoConfirmar="Sí, vaciar"
+              onConfirmar={vaciar}
+            />
+          )}
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -124,6 +149,8 @@ export default function ListaDelDiaPage() {
                 equipoId={equipoId}
                 equipoCodigo={itemsEquipo[0].equipoCodigo}
                 resumen={resumenPorEquipo[equipoId]}
+                numTareas={itemsEquipo.length}
+                onQuitar={() => quitarEquipo(equipoId)}
               />
               <div className="flex flex-col">
                 {itemsEquipo.map((item) => (
